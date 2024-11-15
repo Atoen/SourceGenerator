@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp", "ConsoleApp\ConsoleApp.csproj", "{8CFF8068-C032-48E5-B674-7CDE998FD07E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Generator", "Generator\Generator.csproj", "{BC8E9FB9-C96A-4A92-BD3F-59DB01A8A880}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8CFF8068-C032-48E5-B674-7CDE998FD07E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CFF8068-C032-48E5-B674-7CDE998FD07E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CFF8068-C032-48E5-B674-7CDE998FD07E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CFF8068-C032-48E5-B674-7CDE998FD07E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC8E9FB9-C96A-4A92-BD3F-59DB01A8A880}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC8E9FB9-C96A-4A92-BD3F-59DB01A8A880}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC8E9FB9-C96A-4A92-BD3F-59DB01A8A880}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC8E9FB9-C96A-4A92-BD3F-59DB01A8A880}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
