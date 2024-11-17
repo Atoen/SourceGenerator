@@ -1,2 +1,12 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using ConsoleApp;
+
+var localization = new Localization();
+localization.SetLanguage(SupportedLanguage.Polish);
+
+var localizedText = localization.R.hello_world;
+
+Console.WriteLine(localizedText);
+Console.WriteLine(localizedText);
+
+
+

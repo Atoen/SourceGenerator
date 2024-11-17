@@ -1,6 +1,3 @@
-using Generator;
-using Generator.Generated;
-
 namespace ConsoleApp;
 
 public enum Color
