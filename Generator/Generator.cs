@@ -67,15 +67,17 @@ public class Generator : IIncrementalGenerator
 
     private static void GenerateTranslationClass(ImmutableArray<TranslationsProviderData> providerData, SourceProductionContext context)
     {
-        Dictionary<string, LocalizedText>? defaultDictionary = null;
+        Dictionary<string, IndexedLocalizedText>? defaultDictionary = null;
 
-        var nonDefaultTranslations = new Dictionary<TranslationsProviderData, Dictionary<string, LocalizedText>>();
+        var nonDefaultTranslations = new Dictionary<TranslationsProviderData, Dictionary<string, ParsedLocalizedText>>();
 
         foreach (var data in providerData)
         {
             if (data.ProviderClass.IsDefault)
             {
-                defaultDictionary = ParseFileData(data.File);
+                var defaultParsed = ParseFileData(data.File);
+                defaultDictionary = SourceGenerationHelper.CreateIndexedLocalizedTextDictionary(defaultParsed);
+
                 if (data.Table is { } table)
                 {
                     var emptyTable = SourceGenerationHelper.GenerateLocalizationTable(table, defaultDictionary);
@@ -98,61 +100,96 @@ public class Generator : IIncrementalGenerator
 
         foreach (var pair in nonDefaultTranslations)
         {
-            var (translation, data) = (pair.Value, pair.Key);
+            var (data, translation) = (pair.Key, pair.Value);
 
-            CompareKeys(defaultDictionary, translation, data, context);
-
-            var result = SourceGenerationHelper.GenerateProvider(data.ProviderClass, translation);
+            var indexedTranslations = IndexTranslationKeys(defaultDictionary, translation, data, context);
+            var result = SourceGenerationHelper.GenerateProvider(data.ProviderClass, indexedTranslations);
             context.AddSource($"{data.ProviderClass.ClassName}.g.cs", result);
         }
     }
 
-    private static void CompareKeys(
-        IDictionary<string, LocalizedText> primary,
-        IDictionary<string, LocalizedText> toCompare,
+    private static Dictionary<string, IndexedLocalizedText> IndexTranslationKeys(
+        Dictionary<string, IndexedLocalizedText> defaultTable,
+        Dictionary<string, ParsedLocalizedText> localizedTable,
         TranslationsProviderData providerData,
         SourceProductionContext context)
     {
-        foreach (var pair in primary)
-        {
-            if (!toCompare.ContainsKey(pair.Key) && !pair.Value.Untranslatable)
-            {
-                var diagnostic = Diagnostic.Create(
-                MissingKeyDescriptor,
-                Location.Create(providerData.File.Path, new TextSpan(), new LinePositionSpan()),
-                pair.Key, providerData.File.Name);
-                context.ReportDiagnostic(diagnostic);
-            }
-            else if (pair.Value.Untranslatable)
-            {
-                var line = pair.Value.LineNumber;
-                var linePosition = new LinePosition(line, 0);
+        var indexedTranslations = new Dictionary<string, IndexedLocalizedText>();
 
-                var diagnostic = Diagnostic.Create(
-                UntranslatableKeyDescriptor,
-                Location.Create(providerData.File.Path, new TextSpan(), new LinePositionSpan(linePosition, linePosition)),
-                providerData.File.Name, pair.Key);
-                context.ReportDiagnostic(diagnostic);
+        foreach (var pair in defaultTable)
+        {
+            var (key, defaultValue) = (pair.Key, pair.Value);
+            var localizedTableHasKey = localizedTable.TryGetValue(key, out var localizedValue);
+
+            if (localizedTableHasKey && !defaultValue.IsUntranslatable)
+            {
+                indexedTranslations[key] = new IndexedLocalizedText(localizedValue.Text, defaultValue.Index, localizedValue.IsUntranslatable);
+            }
+            else if (!localizedTableHasKey && !defaultValue.IsUntranslatable)
+            {
+                ReportMissingKeyDiagnostic(context, providerData, key);
+            }
+            else if (localizedTableHasKey && defaultValue.IsUntranslatable)
+            {
+                ReportUntranslatableKeyDiagnostic(context, providerData, key, localizedValue.LineNumber);
             }
         }
 
-        foreach (var pair in toCompare)
+        foreach (var pair in localizedTable)
         {
-            if (!primary.ContainsKey(pair.Key) && !pair.Value.Untranslatable)
+            if (!defaultTable.ContainsKey(pair.Key))
             {
-                var line = pair.Value.LineNumber;
-                var linePosition = new LinePosition(line, 0);
-
-                var diagnostic = Diagnostic.Create(
-                ExtraKeyDescriptor,
-                Location.Create(providerData.File.Path, new TextSpan(), new LinePositionSpan(linePosition, linePosition)),
-                providerData.File.Name, pair.Key);
-                context.ReportDiagnostic(diagnostic);
+                ReportExtraKeyDiagnostic(context, providerData, pair.Key, pair.Value.LineNumber);
             }
         }
+
+        return indexedTranslations;
     }
 
-    private static readonly DiagnosticDescriptor MissingKeyDescriptor = new DiagnosticDescriptor(
+    private static void ReportMissingKeyDiagnostic(
+        SourceProductionContext context,
+        TranslationsProviderData providerData,
+        string key)
+    {
+        var diagnostic = Diagnostic.Create(
+            MissingKeyDescriptor,
+            Location.Create(providerData.File.Path, new TextSpan(), new LinePositionSpan()),
+            key, providerData.File.Name
+        );
+        context.ReportDiagnostic(diagnostic);
+    }
+
+    private static void ReportUntranslatableKeyDiagnostic(
+        SourceProductionContext context,
+        TranslationsProviderData providerData,
+        string key,
+        int lineNumber)
+    {
+        var linePosition = new LinePosition(lineNumber, 0);
+        var diagnostic = Diagnostic.Create(
+            UntranslatableKeyDescriptor,
+            Location.Create(providerData.File.Path, new TextSpan(), new LinePositionSpan(linePosition, linePosition)),
+            providerData.File.Name, key
+        );
+        context.ReportDiagnostic(diagnostic);
+    }
+
+    private static void ReportExtraKeyDiagnostic(
+        SourceProductionContext context,
+        TranslationsProviderData providerData,
+        string key,
+        int lineNumber)
+    {
+        var linePosition = new LinePosition(lineNumber, 0);
+        var diagnostic = Diagnostic.Create(
+            ExtraKeyDescriptor,
+            Location.Create(providerData.File.Path, new TextSpan(), new LinePositionSpan(linePosition, linePosition)),
+            providerData.File.Name, key
+        );
+        context.ReportDiagnostic(diagnostic);
+    }
+
+    private static readonly DiagnosticDescriptor MissingKeyDescriptor = new(
         id: "DIAG001",
         title: "Missing Item in Dictionary",
         messageFormat: "The key '{0}' is missing its translation in {1} file",
@@ -161,7 +198,7 @@ public class Generator : IIncrementalGenerator
         isEnabledByDefault: true
     );
 
-    private static readonly DiagnosticDescriptor ExtraKeyDescriptor = new DiagnosticDescriptor(
+    private static readonly DiagnosticDescriptor ExtraKeyDescriptor = new(
         id: "DIAG002",
         title: "Extra Item in Dictionary",
         messageFormat: "File {0} contains key '{1}', which is not present in the main translations file",
@@ -170,7 +207,7 @@ public class Generator : IIncrementalGenerator
         isEnabledByDefault: true
     );
 
-    private static readonly DiagnosticDescriptor UntranslatableKeyDescriptor = new DiagnosticDescriptor(
+    private static readonly DiagnosticDescriptor UntranslatableKeyDescriptor = new(
         id: "DIAG003",
         title: "Extra Item in Dictionary",
         messageFormat: "File {0} contains key '{1}', which is marked as untranslatable",
@@ -228,9 +265,10 @@ public class Generator : IIncrementalGenerator
             : null;
     }
 
-    private static Dictionary<string, LocalizedText> ParseFileData(TranslationsFileData fileData)
+    private static Dictionary<string, ParsedLocalizedText> ParseFileData(TranslationsFileData fileData)
     {
-        var dictionary = new Dictionary<string, LocalizedText>();
+        var dictionary = new Dictionary<string, ParsedLocalizedText>();
+        var untranslatableSpan = "untranslatable".AsSpan();
 
         for (var i = 0; i < fileData.SourceText.Lines.Count; i++)
         {
@@ -265,9 +303,9 @@ public class Generator : IIncrementalGenerator
             var key = keyValuePart.Slice(0, colonIndex).TrimEnd();
             var value = keyValuePart.Slice(colonIndex + 1).TrimStart();
 
-            var untranslatable = commentPart.Equals("untranslatable".AsSpan(), StringComparison.OrdinalIgnoreCase);
+            var untranslatable = commentPart.Equals(untranslatableSpan, StringComparison.OrdinalIgnoreCase);
 
-            dictionary[key.ToString()] = new LocalizedText(value.ToString(), i, untranslatable);
+            dictionary[key.ToString()] = new ParsedLocalizedText(value.ToString(), i, untranslatable);
         }
 
         return dictionary;
@@ -286,8 +324,13 @@ public class Generator : IIncrementalGenerator
         );
 
         context.AddSource(
-            "LocalizedTextProvider.g.cs",
-            SourceText.From(SourceGenerationHelper.ProviderClass, Encoding.UTF8)
+            "ILocalizedTextProvider.g.cs",
+            SourceText.From(SourceGenerationHelper.ProviderInterface, Encoding.UTF8)
         );
+        //
+        // context.AddSource(
+        //     "DefaultLocalizedTextProvider.g.cs",
+        //     SourceText.From(SourceGenerationHelper.DefaultProviderClass, Encoding.UTF8)
+        // );
     }
 }

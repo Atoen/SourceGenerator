@@ -62,14 +62,16 @@ public readonly record struct LocalizationTableData
 {
     public readonly string Namespace;
     public readonly string ClassName;
-    public readonly string AccessMethodName;
+    public readonly string CurrentProviderAccessor;
+    public readonly string DefaultProviderAccessor;
     public readonly string TableName;
 
-    public LocalizationTableData(string @namespace, string className, string accessMethodName, string tableName)
+    public LocalizationTableData(string @namespace, string className, string currentProviderAccessor, string defaultProviderAccessor, string tableName)
     {
         Namespace = @namespace;
         ClassName = className;
-        AccessMethodName = accessMethodName;
+        CurrentProviderAccessor = currentProviderAccessor;
+        DefaultProviderAccessor = defaultProviderAccessor;
         TableName = tableName;
     }
 }

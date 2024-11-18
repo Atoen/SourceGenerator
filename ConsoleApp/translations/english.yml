@@ -1,3 +1,9 @@
-hello_world: Hello, World! # untranslatable
-user_login_template: Zaloguj się, {0}!
-user_login_template2: Zaloguj się, {0}!f
+greeting: Hello
+farewell: Goodbye
+thank_you: Thank you
+welcome: Welcome
+morning: Good morning
+evening: Good evening
+missing_key: Shouldn't appear in localized
+untranslated_key: Untranslated in localized #untranslatable
+shuffled: Original order matters

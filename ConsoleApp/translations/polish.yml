@@ -1,1 +1,7 @@
-hello_world: Witaj, Świecie!
+greeting: Cześć
+thank_you: Dziękuję
+evening: Dobry wieczór
+welcome: Witamy
+shuffled: Kolejność ma znaczenie
+extra_key: This key is extra in Polish
+untranslated_key: Powinno być nieprzetłumaczone

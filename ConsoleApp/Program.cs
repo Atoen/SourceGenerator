@@ -1,12 +1,13 @@
 ﻿using ConsoleApp;
 
 var localization = new Localization();
+
+Console.WriteLine(localization.Table.greeting);
+
 localization.SetLanguage(SupportedLanguage.Polish);
+Console.WriteLine(localization.Table.greeting);
 
-var localizedText = localization.R.hello_world;
 
-Console.WriteLine(localizedText);
-Console.WriteLine(localizedText);
 
 
 

@@ -26,10 +26,14 @@ public sealed record SupportedLanguage
     };
 }
 
-[LocalizationTable(ProviderMethodName = nameof(Provider), TableName = "R")]
+[LocalizationTable(
+    CurrentProviderAccessor = nameof(Provider),
+    DefaultProviderAccessor = nameof(DefaultProvider),
+    TableName = "Table"
+)]
 public partial class Localization
 {
-    private readonly Dictionary<SupportedLanguage, LocalizedTextProvider> _textProviders = new();
+    private readonly Dictionary<SupportedLanguage, ILocalizedTextProvider> _textProviders = new();
 
     public static SupportedLanguage DefaultLanguage { get; set; } = SupportedLanguage.English;
 
@@ -48,18 +52,18 @@ public partial class Localization
         CultureInfo = CultureInfo.GetCultureInfoByIetfLanguageTag(language.Tag);
     }
 
-    private static LocalizedTextProvider CreateProvider(SupportedLanguage language) => language.Tag switch
+    private static ILocalizedTextProvider CreateProvider(SupportedLanguage language) => language.Tag switch
     {
         SupportedLanguage.EnglishTag => new EnglishTextProvider(),
         SupportedLanguage.PolishTag => new PolishTextProvider(),
         _ => throw new ArgumentOutOfRangeException(nameof(language))
     };
 
-    private LocalizedTextProvider Provider => GetCurrentLanguageProvider();
+    private ILocalizedTextProvider Provider => GetLanguageProvider(Language);
+    private ILocalizedTextProvider DefaultProvider => GetLanguageProvider(DefaultLanguage);
 
-    private LocalizedTextProvider GetCurrentLanguageProvider()
+    private ILocalizedTextProvider GetLanguageProvider(SupportedLanguage language)
     {
-        var language = Language;
         if (_textProviders.TryGetValue(language, out var provider))
         {
             return provider;
@@ -71,4 +75,3 @@ public partial class Localization
         return newProvider;
     }
 }
-
