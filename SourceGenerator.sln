@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp", "ConsoleApp\ConsoleApp.csproj", "{8CFF8068-C032-48E5-B674-7CDE998FD07E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Generator", "Generator\Generator.csproj", "{BC8E9FB9-C96A-4A92-BD3F-59DB01A8A880}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TextLocalizer", "TextLocalizer\TextLocalizer.csproj", "{BC8E9FB9-C96A-4A92-BD3F-59DB01A8A880}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

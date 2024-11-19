@@ -1,4 +1,4 @@
-using Generator.Generated;
+using TextLocalizer;
 
 namespace ConsoleApp;
 
@@ -8,3 +8,5 @@ public partial class EnglishTextProvider;
 [TranslationProvider(Filename = "polish.yml")]
 public partial class PolishTextProvider;
 
+[TranslationProvider(Filename = "german.yml")]
+public partial class GermanTextProvider;

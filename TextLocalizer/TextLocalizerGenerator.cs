@@ -3,10 +3,10 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Generator;
+namespace TextLocalizer;
 
 [Generator]
-public class Generator : IIncrementalGenerator
+public class TextLocalizerGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -14,7 +14,7 @@ public class Generator : IIncrementalGenerator
 
         var translationProviders = context.SyntaxProvider
             .ForAttributeWithMetadataName(
-                "Generator.Generated.TranslationProviderAttribute",
+                "TextLocalizer.TranslationProviderAttribute",
                 predicate: static (_, _) => true,
                 transform: static (ctx, _) => GetTranslationProviderInfo(ctx.SemanticModel, ctx.TargetNode)
             )
@@ -37,7 +37,7 @@ public class Generator : IIncrementalGenerator
 
         var localizationTables = context.SyntaxProvider
             .ForAttributeWithMetadataName(
-                "Generator.Generated.LocalizationTableAttribute",
+                "TextLocalizer.LocalizationTableAttribute",
                 predicate: static (_, _) => true,
                 transform: static (ctx, _) => GetLocalizationTableData(ctx.SemanticModel, ctx.TargetNode)
             )
@@ -69,7 +69,7 @@ public class Generator : IIncrementalGenerator
     {
         Dictionary<string, IndexedLocalizedText>? defaultDictionary = null;
 
-        var nonDefaultTranslations = new Dictionary<TranslationsProviderData, Dictionary<string, ParsedLocalizedText>>();
+        var nonDefaultTranslations = new Dictionary<TranslationsProviderData, Dictionary<string, LocalizedText>>();
 
         foreach (var data in providerData)
         {
@@ -110,7 +110,7 @@ public class Generator : IIncrementalGenerator
 
     private static Dictionary<string, IndexedLocalizedText> IndexTranslationKeys(
         Dictionary<string, IndexedLocalizedText> defaultTable,
-        Dictionary<string, ParsedLocalizedText> localizedTable,
+        Dictionary<string, LocalizedText> localizedTable,
         TranslationsProviderData providerData,
         SourceProductionContext context)
     {
@@ -119,19 +119,21 @@ public class Generator : IIncrementalGenerator
         foreach (var pair in defaultTable)
         {
             var (key, defaultValue) = (pair.Key, pair.Value);
-            var localizedTableHasKey = localizedTable.TryGetValue(key, out var localizedValue);
 
-            if (localizedTableHasKey && !defaultValue.IsUntranslatable)
+            if (localizedTable.TryGetValue(key, out var localizedValue))
             {
-                indexedTranslations[key] = new IndexedLocalizedText(localizedValue.Text, defaultValue.Index, localizedValue.IsUntranslatable);
+                if (defaultValue.IsUntranslatable)
+                {
+                    ReportUntranslatableKeyDiagnostic(context, providerData, key, localizedValue.LineNumber);
+                }
+                else
+                {
+                    indexedTranslations[key] = new IndexedLocalizedText(localizedValue.Text, defaultValue.Index, localizedValue.IsUntranslatable);
+                }
             }
-            else if (!localizedTableHasKey && !defaultValue.IsUntranslatable)
+            else if (!defaultValue.IsUntranslatable)
             {
                 ReportMissingKeyDiagnostic(context, providerData, key);
-            }
-            else if (localizedTableHasKey && defaultValue.IsUntranslatable)
-            {
-                ReportUntranslatableKeyDiagnostic(context, providerData, key, localizedValue.LineNumber);
             }
         }
 
@@ -190,8 +192,8 @@ public class Generator : IIncrementalGenerator
     }
 
     private static readonly DiagnosticDescriptor MissingKeyDescriptor = new(
-        id: "DIAG001",
-        title: "Missing Item in Dictionary",
+        id: "TL001",
+        title: "Missing item in dictionary",
         messageFormat: "The key '{0}' is missing its translation in {1} file",
         category: "DictionaryComparison",
         DiagnosticSeverity.Warning,
@@ -199,8 +201,8 @@ public class Generator : IIncrementalGenerator
     );
 
     private static readonly DiagnosticDescriptor ExtraKeyDescriptor = new(
-        id: "DIAG002",
-        title: "Extra Item in Dictionary",
+        id: "TL002",
+        title: "Extra item in dictionary",
         messageFormat: "File {0} contains key '{1}', which is not present in the main translations file",
         category: "DictionaryComparison",
         DiagnosticSeverity.Warning,
@@ -208,19 +210,19 @@ public class Generator : IIncrementalGenerator
     );
 
     private static readonly DiagnosticDescriptor UntranslatableKeyDescriptor = new(
-        id: "DIAG003",
-        title: "Extra Item in Dictionary",
+        id: "TL003",
+        title: "Untranslatable key is localized",
         messageFormat: "File {0} contains key '{1}', which is marked as untranslatable",
         category: "DictionaryComparison",
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true
     );
 
-    private static ImmutableArray<TranslationsFileProviderData> CombineProvidersWithFiles(
+    private static ImmutableArray<SourceGeneratorData> CombineProvidersWithFiles(
         ImmutableArray<TranslationProviderClassData?> classes,
         ImmutableArray<TranslationsFileData> files)
     {
-        var builder = ImmutableArray.CreateBuilder<TranslationsFileProviderData>();
+        var builder = ImmutableArray.CreateBuilder<SourceGeneratorData>();
 
         var fileLookup = files.ToDictionary(static x => x.Name);
         foreach (var classInfo in classes)
@@ -229,7 +231,7 @@ public class Generator : IIncrementalGenerator
 
             if (fileLookup.TryGetValue(validClassInfo.Filename, out var matchingFile))
             {
-                builder.Add(new TranslationsFileProviderData(validClassInfo, matchingFile));
+                builder.Add(new SourceGeneratorData(validClassInfo, matchingFile));
             }
         }
 
@@ -237,7 +239,7 @@ public class Generator : IIncrementalGenerator
     }
 
     private static ImmutableArray<TranslationsProviderData> CreateProviderTableData(
-        ImmutableArray<TranslationsFileProviderData> providerData,
+        ImmutableArray<SourceGeneratorData> providerData,
         ImmutableArray<LocalizationTableData?> tableData)
     {
         var table = tableData.Single();
@@ -265,9 +267,9 @@ public class Generator : IIncrementalGenerator
             : null;
     }
 
-    private static Dictionary<string, ParsedLocalizedText> ParseFileData(TranslationsFileData fileData)
+    private static Dictionary<string, LocalizedText> ParseFileData(TranslationsFileData fileData)
     {
-        var dictionary = new Dictionary<string, ParsedLocalizedText>();
+        var dictionary = new Dictionary<string, LocalizedText>();
         var untranslatableSpan = "untranslatable".AsSpan();
 
         for (var i = 0; i < fileData.SourceText.Lines.Count; i++)
@@ -305,7 +307,7 @@ public class Generator : IIncrementalGenerator
 
             var untranslatable = commentPart.Equals(untranslatableSpan, StringComparison.OrdinalIgnoreCase);
 
-            dictionary[key.ToString()] = new ParsedLocalizedText(value.ToString(), i, untranslatable);
+            dictionary[key.ToString()] = new LocalizedText(value.ToString(), i, untranslatable);
         }
 
         return dictionary;
@@ -327,10 +329,5 @@ public class Generator : IIncrementalGenerator
             "ILocalizedTextProvider.g.cs",
             SourceText.From(SourceGenerationHelper.ProviderInterface, Encoding.UTF8)
         );
-        //
-        // context.AddSource(
-        //     "DefaultLocalizedTextProvider.g.cs",
-        //     SourceText.From(SourceGenerationHelper.DefaultProviderClass, Encoding.UTF8)
-        // );
     }
 }

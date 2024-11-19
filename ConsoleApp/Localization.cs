@@ -1,35 +1,12 @@
 using System.Globalization;
-using Generator.Generated;
+using TextLocalizer;
 
 namespace ConsoleApp;
-
-public sealed record SupportedLanguage
-{
-    public const string EnglishTag = "en";
-    public const string PolishTag = "pl";
-
-    public static readonly SupportedLanguage English = new(EnglishTag);
-    public static readonly SupportedLanguage Polish = new(PolishTag);
-
-    public string Tag { get; }
-
-    private SupportedLanguage(string tag)
-    {
-        Tag = tag;
-    }
-
-    public static SupportedLanguage? ParseLanguageCode(string languageCode) => languageCode switch
-    {
-        "en" => English,
-        "pl" => Polish,
-        _ => null
-    };
-}
 
 [LocalizationTable(
     CurrentProviderAccessor = nameof(Provider),
     DefaultProviderAccessor = nameof(DefaultProvider),
-    TableName = "Table"
+    TableName = "R"
 )]
 public partial class Localization
 {
@@ -56,6 +33,7 @@ public partial class Localization
     {
         SupportedLanguage.EnglishTag => new EnglishTextProvider(),
         SupportedLanguage.PolishTag => new PolishTextProvider(),
+        SupportedLanguage.GermanTag => new GermanTextProvider(),
         _ => throw new ArgumentOutOfRangeException(nameof(language))
     };
 

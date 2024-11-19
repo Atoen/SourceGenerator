@@ -2,7 +2,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace Generator;
+namespace TextLocalizer;
 
 public static class SourceGenerationHelper
 {
@@ -13,7 +13,7 @@ public static class SourceGenerationHelper
         """
         #nullable enable
 
-        namespace Generator.Generated
+        namespace TextLocalizer
         {
             [System.AttributeUsage(System.AttributeTargets.Class)]
             public class TranslationProviderAttribute : System.Attribute
@@ -31,7 +31,7 @@ public static class SourceGenerationHelper
 
     public const string LocalizationTableAttribute =
         """
-        namespace Generator.Generated
+        namespace TextLocalizer
         {
             [System.AttributeUsage(System.AttributeTargets.Class)]
             public class LocalizationTableAttribute : System.Attribute
@@ -49,7 +49,7 @@ public static class SourceGenerationHelper
         """
         #nullable enable
         
-        namespace Generator.Generated
+        namespace TextLocalizer
         {
             public interface ILocalizedTextProvider
             {
@@ -65,7 +65,7 @@ public static class SourceGenerationHelper
         return SyntaxFacts.IsValidIdentifier(identifier);
     }
 
-    public static Dictionary<string, IndexedLocalizedText> CreateIndexedLocalizedTextDictionary(Dictionary<string, ParsedLocalizedText> parsedLocalizedTexts)
+    public static Dictionary<string, IndexedLocalizedText> CreateIndexedLocalizedTextDictionary(Dictionary<string, LocalizedText> parsedLocalizedTexts)
     {
         var indexedDictionary = new Dictionary<string, IndexedLocalizedText>();
         var index = 1;
@@ -90,7 +90,7 @@ public static class SourceGenerationHelper
     {
         var builder = new StringBuilder()
             .Append("#nullable enable\n\n")
-            .Append("using Generator.Generated;\n\n")
+            .Append("using TextLocalizer;\n\n")
             .Append("namespace ").Append(classData.Namespace).Append('\n')
             .Append("{\n")
             .Append("    public partial class ").Append(classData.ClassName).Append(" : ILocalizedTextProvider\n")
@@ -124,7 +124,7 @@ public static class SourceGenerationHelper
     {
         var builder = new StringBuilder()
             .Append("#nullable enable\n\n")
-            .Append("using Generator.Generated;\n\n")
+            .Append("using TextLocalizer;\n\n")
             .Append("namespace ").Append(data.Namespace).Append('\n')
             .Append("{\n")
             .Append("    public partial class ").Append(data.ClassName).Append('\n')

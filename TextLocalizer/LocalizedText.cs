@@ -1,12 +1,12 @@
-namespace Generator;
+namespace TextLocalizer;
 
-public readonly record struct ParsedLocalizedText
+public readonly record struct LocalizedText
 {
     public readonly string Text;
     public readonly int LineNumber;
     public readonly bool IsUntranslatable;
 
-    public ParsedLocalizedText(string text, int lineNumber, bool isUntranslatable = false)
+    public LocalizedText(string text, int lineNumber, bool isUntranslatable = false)
     {
         Text = text;
         LineNumber = lineNumber;

@@ -1,6 +1,6 @@
 using Microsoft.CodeAnalysis.Text;
 
-namespace Generator;
+namespace TextLocalizer;
 
 public readonly record struct TranslationProviderClassData
 {
@@ -32,12 +32,12 @@ public readonly record struct TranslationsProviderData
     }
 }
 
-public readonly record struct TranslationsFileProviderData
+public readonly record struct SourceGeneratorData
 {
     public readonly TranslationProviderClassData ProviderClass;
     public readonly TranslationsFileData TranslationsFile;
 
-    public TranslationsFileProviderData(TranslationProviderClassData providerClass, TranslationsFileData translationsFile)
+    public SourceGeneratorData(TranslationProviderClassData providerClass, TranslationsFileData translationsFile)
     {
         ProviderClass = providerClass;
         TranslationsFile = translationsFile;
