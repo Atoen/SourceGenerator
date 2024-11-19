@@ -1,7 +1,7 @@
 using System.Globalization;
 using TextLocalizer;
 
-namespace ConsoleApp;
+namespace SampleApp;
 
 [LocalizationTable(
     CurrentProviderAccessor = nameof(Provider),

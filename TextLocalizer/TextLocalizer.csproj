@@ -8,12 +8,13 @@
         <LangVersion>Latest</LangVersion>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 
-        <PackageId>TextLocalizer.18.11.24.Test</PackageId>
+        <PackageId>TextLocalizer</PackageId>
         <Version>1.0.0</Version>
         <Authors>Atoen</Authors>
         <Title>TextLocalizer</Title>
         <Description>A source-generated text translation provider using YAML files.</Description>
-        <PackageTags>SourceGenerated;Translation;Localization</PackageTags>
+        <PackageTags>Source generated;Translation;Localization</PackageTags>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
 
     <ItemGroup>

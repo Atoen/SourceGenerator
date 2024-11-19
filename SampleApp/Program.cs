@@ -1,4 +1,4 @@
-﻿using ConsoleApp;
+﻿using SampleApp;
 
 var localization = new Localization();
 

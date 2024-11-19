@@ -1,4 +1,4 @@
-namespace ConsoleApp;
+namespace SampleApp;
 
 public sealed record SupportedLanguage
 {

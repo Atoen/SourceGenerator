@@ -1,6 +1,6 @@
 using TextLocalizer;
 
-namespace ConsoleApp;
+namespace SampleApp;
 
 [TranslationProvider(Filename = "english.yml", IsDefault = true)]
 public partial class EnglishTextProvider;
