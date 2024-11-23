@@ -172,7 +172,7 @@ public static class SourceGenerationHelper
         var attributeData = GetAttributeData(classSymbol, TranslationProviderAttributeName);
         if (attributeData is null) return null;
 
-        var @namespace = classSymbol.ContainingNamespace.Name;
+        var @namespace = classSymbol.ContainingNamespace.ToString();
         var className = classSymbol.Name;
         var filename = "";
         var isDefault = false;
@@ -198,7 +198,7 @@ public static class SourceGenerationHelper
         var attributeData = GetAttributeData(classSymbol, LocalizationTableAttributeName);
         if (attributeData is null) return null;
 
-        var @namespace = classSymbol.ContainingNamespace.Name;
+        var @namespace = classSymbol.ContainingNamespace.ToString();
         var className = classSymbol.Name;
         var currentProviderAccessor = "";
         var defaultProviderAccessor = "";

@@ -123,7 +123,7 @@ If a key is not found in the localized file, the value from the default file is 
 0>polish.yml(6,1): Warning TL002 : File polish.yml contains key 'extra_key', which is not present in the main translations file
 ```
 
-To silence the warning, you can mark the key in the main dictionary file as untranslatable with a comment:
+You can mark the key in the main dictionary file as untranslatable with a comment:
 ```yaml
 special_key: Special value # untranslatable
 ```
