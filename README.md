@@ -24,7 +24,7 @@ Add the following configuration to your project file (`.csproj`):
 <Project Sdk="Microsoft.NET.Sdk">
     
     <PropertyGroup>
-        ...
+        <PackageReference Include="TextLocalizer" Version="1.0.7" />
     </PropertyGroup>
 
     <ItemGroup>
@@ -53,6 +53,7 @@ Finally, create the class providing the correct localized keys:
 
 ```csharp
 using TextLocalizer;
+using TextLocalizer.Types;
 
 // You can represent the languages in any way you like.
 public enum SupportedLanguage

@@ -324,10 +324,5 @@ public class TextLocalizerGenerator : IIncrementalGenerator
             "LocalizationTableAttribute.g.cs",
             SourceText.From(SourceGenerationHelper.LocalizationTableAttribute, Encoding.UTF8)
         );
-
-        context.AddSource(
-            "ILocalizedTextProvider.g.cs",
-            SourceText.From(SourceGenerationHelper.ProviderInterface, Encoding.UTF8)
-        );
     }
 }

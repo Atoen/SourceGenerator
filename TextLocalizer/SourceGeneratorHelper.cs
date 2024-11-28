@@ -45,20 +45,6 @@ public static class SourceGenerationHelper
         }
         """;
 
-    public const string ProviderInterface =
-        """
-        #nullable enable
-        
-        namespace TextLocalizer
-        {
-            public interface ILocalizedTextProvider
-            {
-                string? this[int key] { get; }
-            }
-        }
-        
-        #nullable restore
-        """;
 
     public static bool IsValidNameIdentifier(string identifier)
     {
@@ -90,7 +76,7 @@ public static class SourceGenerationHelper
     {
         var builder = new StringBuilder()
             .Append("#nullable enable\n\n")
-            .Append("using TextLocalizer;\n\n")
+            .Append("using TextLocalizer.Types;\n\n")
             .Append("namespace ").Append(classData.Namespace).Append('\n')
             .Append("{\n")
             .Append("    public partial class ").Append(classData.ClassName).Append(" : ILocalizedTextProvider\n")
@@ -124,7 +110,7 @@ public static class SourceGenerationHelper
     {
         var builder = new StringBuilder()
             .Append("#nullable enable\n\n")
-            .Append("using TextLocalizer;\n\n")
+            .Append("using TextLocalizer.Types;\n\n")
             .Append("namespace ").Append(data.Namespace).Append('\n')
             .Append("{\n")
             .Append("    public partial class ").Append(data.ClassName).Append('\n')
@@ -202,7 +188,7 @@ public static class SourceGenerationHelper
         var className = classSymbol.Name;
         var currentProviderAccessor = "";
         var defaultProviderAccessor = "";
-        var tableName = "";
+        var tableName = "Table";
 
         foreach (var namedArgument in attributeData.NamedArguments)
         {

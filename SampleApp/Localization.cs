@@ -1,5 +1,6 @@
 using System.Globalization;
 using TextLocalizer;
+using TextLocalizer.Types;
 
 namespace SampleApp;
 

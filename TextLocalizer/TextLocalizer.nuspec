@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <!-- Identifier that must be unique within the hosting gallery -->
+        <id>TextLocalizer</id>
+
+        <!-- Package version number that is used when resolving dependencies -->
+        <version>1.0.7</version>
+
+        <!-- Authors contain text that appears directly on the gallery -->
+        <authors>Atoen</authors>
+
+        <!-- Project URL provides a link for the gallery -->
+        <projectUrl>https://github.com/Atoen/TextLocalizer</projectUrl>
+
+        <!-- License information is displayed on the gallery -->
+        <license type="expression">MIT</license>
+
+        <!--
+            The description can be used in package manager UI. Note that the
+            nuget.org gallery uses information you add in the portal.
+        -->
+        <description>A source-generated text translation provider using YAML files.</description>
+
+        <!-- Tags appear in the gallery and can be used for tag searches -->
+        <tags>SourceGenerated;Translation;Localization</tags>
+
+        <!-- Dependencies are automatically installed when the package is installed -->
+        <dependencies>
+            <dependency id="TextLocalizer.Types" version="1.0.2" />
+        </dependencies>
+    </metadata>
+</package>

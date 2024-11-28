@@ -2,20 +2,22 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
-        <IncludeBuildOutput>false</IncludeBuildOutput>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>Latest</LangVersion>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
 
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageId>TextLocalizer</PackageId>
-        <Version>1.0.2</Version>
+        <Version>1.0.7</Version>
         <Authors>Atoen</Authors>
         <Title>TextLocalizer</Title>
         <Description>A source-generated text translation provider using YAML files.</Description>
         <PackageTags>Source generated;Translation;Localization</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <RepositoryUrl>https://github.com/Atoen/TextLocalizer</RepositoryUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 
     <ItemGroup>
@@ -26,10 +28,15 @@
     <ItemGroup>
         <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
         <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+        <None Include="..\README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
 
     <ItemGroup>
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true"
               PackagePath="analyzers/dotnet/cs" Visible="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\TextLocalizer.Types\TextLocalizer.Types.csproj" />
     </ItemGroup>
 </Project>
