@@ -10,7 +10,7 @@
 
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageId>TextLocalizer</PackageId>
-        <Version>1.0.7</Version>
+        <Version>1.0.8</Version>
         <Authors>Atoen</Authors>
         <Title>TextLocalizer</Title>
         <Description>A source-generated text translation provider using YAML files.</Description>

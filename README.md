@@ -13,6 +13,10 @@ The keys must be valid C# identifiers.
 # The ordering of keys does not need to match between files.
 hello_world: Hello, World!
 goodbye: Goodbye.
+
+# Quoted values (useful for special characters or preserving whitespace)
+quoted: "quoted: value!"
+quoted2: 'some other value'
 ```
 
 ### 2. Include Localization Files in the Build
@@ -22,10 +26,15 @@ Add the following configuration to your project file (`.csproj`):
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
-    
+
     <PropertyGroup>
-        <PackageReference Include="TextLocalizer" Version="1.0.7" />
+        ...
     </PropertyGroup>
+
+
+    <ItemGroup>
+        <PackageReference Include="TextLocalizer" Version="1.0.8" />
+    </ItemGroup>
 
     <ItemGroup>
         <AdditionalFiles Include="path\to\english.yml" />
