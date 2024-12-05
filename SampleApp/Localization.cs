@@ -8,6 +8,7 @@ namespace SampleApp;
     CurrentProviderAccessor = nameof(Provider),
     DefaultProviderAccessor = nameof(DefaultProvider),
     TableName = "R"
+    // GenerateDocs = true
 )]
 public partial class Localization
 {

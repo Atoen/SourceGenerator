@@ -68,32 +68,53 @@ public class TextLocalizerGenerator : IIncrementalGenerator
     private static void GenerateTranslationClass(ImmutableArray<TranslationsProviderData> providerData, SourceProductionContext context)
     {
         Dictionary<string, IndexedLocalizedText>? defaultDictionary = null;
+        TranslationsProviderData? defaultProvider = null;
 
+        var translationsAggregatedByFilename = new Dictionary<string, Dictionary<string, string>>();
         var nonDefaultTranslations = new Dictionary<TranslationsProviderData, Dictionary<string, LocalizedText>>();
 
         foreach (var data in providerData)
         {
-            if (data.ProviderClass.IsDefault)
-            {
-                var defaultParsed = ParseFileData(data.File);
-                defaultDictionary = SourceGenerationHelper.CreateIndexedLocalizedTextDictionary(defaultParsed);
+            var parsed = ParseFile(data.File);
 
-                if (data.Table is { } table)
+            // Aggregating translations for generating xml docs
+            foreach (var pair in parsed)
+            {
+                var (key, localizedText) = (pair.Key, pair.Value);
+                if (!translationsAggregatedByFilename.TryGetValue(key, out var translations))
                 {
-                    var emptyTable = SourceGenerationHelper.GenerateLocalizationTable(table, defaultDictionary);
-                    context.AddSource($"{table.ClassName}.g.cs", emptyTable);
+                    translations = new Dictionary<string, string>();
+                    translationsAggregatedByFilename[key] = translations;
                 }
 
-                var result = SourceGenerationHelper.GenerateProvider(data.ProviderClass, defaultDictionary);
-                context.AddSource($"{data.ProviderClass.ClassName}.g.cs", result);
-
-                continue;
+                translations[data.File.Name] = localizedText.Text;
             }
 
-            nonDefaultTranslations[data] = ParseFileData(data.File);
+            if (data.ProviderClass.IsDefault)
+            {
+                defaultProvider = data;
+                defaultDictionary = SourceGenerationHelper.CreateIndexedLocalizedTextDictionary(parsed);
+            }
+            else
+            {
+                nonDefaultTranslations[data] = parsed;
+            }
         }
 
-        if (defaultDictionary is null)
+        // Generate default provider and table with xml docs
+        if (defaultDictionary is { } dictionary && defaultProvider is { } provider)
+        {
+            var providerClass = provider.ProviderClass;
+            var result = SourceGenerationHelper.GenerateProvider(providerClass, defaultDictionary);
+            context.AddSource($"{providerClass.ClassName}.g.cs", result);
+
+            if (provider.Table is { } tableData)
+            {
+                var generatedTable = SourceGenerationHelper.GenerateLocalizationTable(tableData, dictionary, translationsAggregatedByFilename);
+                context.AddSource($"{tableData.ClassName}.g.cs", generatedTable);
+            }
+        }
+        else
         {
             return;
         }
@@ -106,6 +127,89 @@ public class TextLocalizerGenerator : IIncrementalGenerator
             var result = SourceGenerationHelper.GenerateProvider(data.ProviderClass, indexedTranslations);
             context.AddSource($"{data.ProviderClass.ClassName}.g.cs", result);
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // Dictionary<string, IndexedLocalizedText>? defaultDictionary = null;
+        //
+        // var translationsAggregatedByFilename = new Dictionary<string, Dictionary<string, string>>();
+        // var nonDefaultTranslations = new Dictionary<TranslationsProviderData, Dictionary<string, LocalizedText>>();
+        //
+        // foreach (var data in providerData)
+        // {
+        //     var parsedData = ParseFileData(data.File);
+        //
+        //     // Aggregating translations for generating xml docs
+        //     foreach (var pair in parsedData)
+        //     {
+        //         var (key, localizedText) = (pair.Key, pair.Value);
+        //         if (!translationsAggregatedByFilename.TryGetValue(key, out var translations))
+        //         {
+        //             translations = new Dictionary<string, string>();
+        //             translationsAggregatedByFilename[key] = translations;
+        //         }
+        //
+        //         translations[data.File.Name] = localizedText.Text;
+        //     }
+        //
+        //
+        //     if (data.ProviderClass.IsDefault)
+        //     {
+        //         // var defaultParsed = ParseFileData(data.File);
+        //         defaultDictionary = SourceGenerationHelper.CreateIndexedLocalizedTextDictionary(parsedData);
+        //
+        //         if (data.Table is { } table)
+        //         {
+        //             var emptyTable = SourceGenerationHelper.GenerateLocalizationTable(table, defaultDictionary);
+        //             context.AddSource($"{table.ClassName}.g.cs", emptyTable);
+        //         }
+        //
+        //         var result = SourceGenerationHelper.GenerateProvider(data.ProviderClass, defaultDictionary);
+        //         context.AddSource($"{data.ProviderClass.ClassName}.g.cs", result);
+        //
+        //         continue;
+        //     }
+        //
+        //     nonDefaultTranslations[data] = ParseFileData(data.File);
+        // }
+        //
+        // if (defaultDictionary is null)
+        // {
+        //     return;
+        // }
+        //
+        // foreach (var pair in nonDefaultTranslations)
+        // {
+        //     var (data, translation) = (pair.Key, pair.Value);
+        //
+        //     var indexedTranslations = IndexTranslationKeys(defaultDictionary, translation, data, context);
+        //     var result = SourceGenerationHelper.GenerateProvider(data.ProviderClass, indexedTranslations);
+        //     context.AddSource($"{data.ProviderClass.ClassName}.g.cs", result);
+        // }
     }
 
     private static Dictionary<string, IndexedLocalizedText> IndexTranslationKeys(
@@ -267,7 +371,7 @@ public class TextLocalizerGenerator : IIncrementalGenerator
             : null;
     }
 
-    private static Dictionary<string, LocalizedText> ParseFileData(TranslationsFileData fileData)
+    private static Dictionary<string, LocalizedText> ParseFile(TranslationsFileData fileData)
     {
         var dictionary = new Dictionary<string, LocalizedText>();
         var untranslatableSpan = "untranslatable".AsSpan();

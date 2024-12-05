@@ -65,13 +65,15 @@ public readonly record struct LocalizationTableData
     public readonly string CurrentProviderAccessor;
     public readonly string DefaultProviderAccessor;
     public readonly string TableName;
+    public readonly bool GenerateDocs;
 
-    public LocalizationTableData(string @namespace, string className, string currentProviderAccessor, string defaultProviderAccessor, string tableName)
+    public LocalizationTableData(string @namespace, string className, string currentProviderAccessor, string defaultProviderAccessor, string tableName, bool generateDocs)
     {
         Namespace = @namespace;
         ClassName = className;
         CurrentProviderAccessor = currentProviderAccessor;
         DefaultProviderAccessor = defaultProviderAccessor;
         TableName = tableName;
+        GenerateDocs = generateDocs;
     }
 }

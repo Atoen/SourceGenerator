@@ -31,9 +31,8 @@ Add the following configuration to your project file (`.csproj`):
         ...
     </PropertyGroup>
 
-
     <ItemGroup>
-        <PackageReference Include="TextLocalizer" Version="1.0.8" />
+        <PackageReference Include="TextLocalizer" Version="1.0.9" />
     </ItemGroup>
 
     <ItemGroup>
@@ -75,7 +74,8 @@ public enum SupportedLanguage
 [LocalizationTable(
     CurrentProviderAccessor = nameof(Provider),
     DefaultProviderAccessor = nameof(DefaultProvider),
-    TableName = "R" // Defaults to "Table"
+    TableName = "R", // Defaults to "Table"
+    GenerateDocs = true // Adds XML docs with translations for each key (enabled by default).
 )]
 public partial class Localization
 {

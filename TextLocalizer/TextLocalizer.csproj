@@ -10,11 +10,11 @@
 
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageId>TextLocalizer</PackageId>
-        <Version>1.0.8</Version>
+        <Version>1.0.9</Version>
         <Authors>Atoen</Authors>
         <Title>TextLocalizer</Title>
         <Description>A source-generated text translation provider using YAML files.</Description>
-        <PackageTags>Source generated;Translation;Localization</PackageTags>
+        <PackageTags>SourceGenerated;Translation;Localization</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <RepositoryUrl>https://github.com/Atoen/TextLocalizer</RepositoryUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>

@@ -4,6 +4,8 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace TextLocalizer;
 
+using AllTranslationsData = Dictionary<string, Dictionary<string, string>>;
+
 public static class SourceGenerationHelper
 {
     private const string TranslationProviderAttributeName = "TranslationProviderAttribute";
@@ -41,6 +43,8 @@ public static class SourceGenerationHelper
                 public required string DefaultProviderAccessor { get; set; }
                 
                 public string TableName { get; set; } = "Table";
+                
+                public bool GenerateDocs { get; set; } = true;
             }
         }
         """;
@@ -106,24 +110,27 @@ public static class SourceGenerationHelper
         return builder.ToString();
     }
 
-    public static string GenerateLocalizationTable(LocalizationTableData data, Dictionary<string, IndexedLocalizedText> dictionary)
+    public static string GenerateLocalizationTable(
+        LocalizationTableData localizationTableData,
+        Dictionary<string, IndexedLocalizedText> defaultDictionary,
+        AllTranslationsData allTranslations)
     {
         var builder = new StringBuilder()
             .Append("#nullable enable\n\n")
             .Append("using TextLocalizer.Types;\n\n")
-            .Append("namespace ").Append(data.Namespace).Append('\n')
+            .Append("namespace ").Append(localizationTableData.Namespace).Append('\n')
             .Append("{\n")
-            .Append("    public partial class ").Append(data.ClassName).Append('\n')
+            .Append("    public partial class ").Append(localizationTableData.ClassName).Append('\n')
             .Append("    {\n")
             .Append("        private TextTable? _table;\n")
-            .Append("        public TextTable ").Append(data.TableName).Append(" => _table ??= new TextTable(this);\n\n")
-            .Append("        public class TextTable(").Append(data.ClassName).Append(" outer)\n")
+            .Append("        public TextTable ").Append(localizationTableData.TableName).Append(" => _table ??= new TextTable(this);\n\n")
+            .Append("        public class TextTable(").Append(localizationTableData.ClassName).Append(" outer)\n")
             .Append("        {\n");
 
-        foreach (var pair in dictionary)
+        foreach (var pair in defaultDictionary)
         {
             var (key, localizedText) = (pair.Key, pair.Value);
-            AppendTextTableProperty(builder, key, localizedText, data);
+            AppendTextTableProperty(builder, key, localizedText, localizationTableData, allTranslations);
         }
 
         builder.Append("        }\n")
@@ -134,10 +141,33 @@ public static class SourceGenerationHelper
         return builder.ToString();
     }
 
-    private static void AppendTextTableProperty(StringBuilder builder, string key, IndexedLocalizedText localizedText, LocalizationTableData data)
+    /// <summary>
+    /// <i>untranstatable key</i> <br/>
+    /// oro
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="key"></param>
+    /// <param name="localizedText"></param>
+    /// <param name="data"></param>
+    /// <param name="allTranslations"></param>
+    private static void AppendTextTableProperty(
+        StringBuilder builder,
+        string key,
+        IndexedLocalizedText localizedText,
+        LocalizationTableData data,
+        AllTranslationsData allTranslations)
     {
+
         if (localizedText.IsUntranslatable)
         {
+            if (data.GenerateDocs)
+            {
+                builder.Append("            /// <summary>\n");
+                builder.Append("            /// <i>Marked as untranslatable</i><br/>\n");
+                builder.Append("            /// ").Append(localizedText.Text).Append('\n');
+                builder.Append("            /// </summary>\n");
+            }
+
             builder
                 .Append("            public string ").Append(key)
                 .Append(" => outer.").Append(data.DefaultProviderAccessor)
@@ -145,6 +175,29 @@ public static class SourceGenerationHelper
         }
         else
         {
+            if (data.GenerateDocs && allTranslations.TryGetValue(key, out var fileTranslations))
+            {
+                builder.Append("            /// <summary>\n");
+                builder.Append("            ///  <list type=\"table\">\n");
+                builder.Append("            ///   <listheader>\n");
+                builder.Append("            ///    <term>File</term>\n");
+                builder.Append("            ///    <description>Translation</description>\n");
+                builder.Append("            ///   </listheader>\n");
+
+                foreach (var pair in fileTranslations)
+                {
+                    var (filename, translation) = (pair.Key, pair.Value);
+
+                    builder.Append("            ///   <item>\n");
+                    builder.Append($"            ///    <term>").Append(filename).Append("</term>\n");
+                    builder.Append($"            ///    <description>").Append(translation).Append("</description>\n");
+                    builder.Append("            ///   </item>\n");
+                }
+
+                builder.Append("            ///  </list>\n");
+                builder.Append("            /// </summary>\n");
+            }
+
             builder
                 .Append("            public string ").Append(key)
                 .Append(" => outer.").Append(data.CurrentProviderAccessor)
@@ -189,6 +242,7 @@ public static class SourceGenerationHelper
         var currentProviderAccessor = "";
         var defaultProviderAccessor = "";
         var tableName = "Table";
+        var generateDocs = true;
 
         foreach (var namedArgument in attributeData.NamedArguments)
         {
@@ -206,6 +260,11 @@ public static class SourceGenerationHelper
             {
                 tableName = tableNameValue;
             }
+
+            if (namedArgument is { Key: "GenerateDocs", Value.Value: bool generateDocsValue })
+            {
+                generateDocs = generateDocsValue;
+            }
         }
 
         if (!IsValidNameIdentifier(currentProviderAccessor) || !IsValidNameIdentifier(defaultProviderAccessor) || !IsValidNameIdentifier(tableName))
@@ -213,7 +272,7 @@ public static class SourceGenerationHelper
             return null;
         }
 
-        return new LocalizationTableData(@namespace, className, currentProviderAccessor, defaultProviderAccessor, tableName);
+        return new LocalizationTableData(@namespace, className, currentProviderAccessor, defaultProviderAccessor, tableName, generateDocs);
     }
 
     private static AttributeData? GetAttributeData(INamedTypeSymbol classSymbol, string attributeName)
