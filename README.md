@@ -32,7 +32,7 @@ Add the following configuration to your project file (`.csproj`):
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="TextLocalizer" Version="1.0.9" />
+        <PackageReference Include="TextLocalizer" Version="1.1.0" />
     </ItemGroup>
 
     <ItemGroup>

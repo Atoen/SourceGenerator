@@ -13,13 +13,8 @@
         <AdditionalFiles Include="translations\german.yml" />
     </ItemGroup>
 
-<!--    <ItemGroup>-->
-<!--      <ProjectReference Include="..\TextLocalizer.Types\TextLocalizer.Types.csproj" />-->
-<!--      <ProjectReference Include="..\TextLocalizer\TextLocalizer.csproj" OutputItemType="Analyzer" />-->
-<!--    </ItemGroup>-->
-
     <ItemGroup>
-      <PackageReference Include="TextLocalizer" Version="1.0.9" />
+      <PackageReference Include="TextLocalizer" Version="1.1.0" />
     </ItemGroup>
     
 </Project>
