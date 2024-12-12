@@ -7,8 +7,9 @@ namespace SampleApp;
 [LocalizationTable(
     CurrentProviderAccessor = nameof(Provider),
     DefaultProviderAccessor = nameof(DefaultProvider),
-    TableName = "R"
-    // GenerateDocs = true
+    TableName = "R",
+    GenerateDocs = true
+    // GenereteIdTable = true
 )]
 public partial class Localization
 {
