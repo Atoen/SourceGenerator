@@ -13,19 +13,22 @@ internal record struct AttributePropertyValue<T>
 
     private T? _value;
 
-    public AttributePropertyValue(string name, T DefaultValue)
+    public AttributePropertyValue(string name, T defaultValue)
     {
         Name = name;
-        this.DefaultValue = DefaultValue;
+        DefaultValue = defaultValue;
     }
 
-    public static implicit operator T(AttributePropertyValue<T> attributePropertyValue) => attributePropertyValue.Value;
+    public static implicit operator T(AttributePropertyValue<T> attributePropertyValue)
+    {
+        return attributePropertyValue.Value;
+    }
 
     public void ReadIfEmpty(KeyValuePair<string, TypedConstant> property)
     {
         if (Read) return;
 
-        if (property.Key == Name && property.Value is T propertyValue)
+        if (property.Key == Name && property.Value.Value is T propertyValue)
         {
             _value = propertyValue;
             Read = true;
@@ -63,7 +66,7 @@ internal readonly record struct TranslationTableAttributeData
     public readonly AttributePropertyValue<string> DefaultProviderAccessor = new(nameof(DefaultProviderAccessor), string.Empty);
     public readonly AttributePropertyValue<string> TableName = new(nameof(TableName), "Table");
     public readonly AttributePropertyValue<bool> GenerateDocs = new(nameof(GenerateDocs), true);
-    public readonly AttributePropertyValue<bool> GenerateIdTable = new(nameof(GenerateIdTable), true);
+    public readonly AttributePropertyValue<string?> IdClassName = new(nameof(IdClassName), null);
 
     public TranslationTableAttributeData(string @namespace, string className, AttributeData attributeData)
     {
@@ -76,7 +79,7 @@ internal readonly record struct TranslationTableAttributeData
             DefaultProviderAccessor.ReadIfEmpty(property);
             TableName.ReadIfEmpty(property);
             GenerateDocs.ReadIfEmpty(property);
-            GenerateIdTable.ReadIfEmpty(property);
+            IdClassName.ReadIfEmpty(property);
         }
     }
 

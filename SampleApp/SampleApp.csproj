@@ -14,12 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\TextLocalizer.Types\TextLocalizer.Types.csproj" />
-      <ProjectReference Include="..\TextLocalizer\TextLocalizer.csproj" OutputItemType="Analyzer" />
+        <PackageReference Include="TextLocalizer" Version="1.2.0" />
     </ItemGroup>
 
-<!--    <ItemGroup>-->
-<!--      <PackageReference Include="TextLocalizer" Version="1.1.0" />-->
-<!--    </ItemGroup>-->
-    
 </Project>

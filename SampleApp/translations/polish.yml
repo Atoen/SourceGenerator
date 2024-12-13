@@ -5,3 +5,4 @@ welcome: Witamy
 shuffled: Kolejność ma znaczenie
 extra_key: This key is extra in Polish
 untranslated_key: Powinno być nieprzetłumaczone
+templated: Wiadomość z {0} szablonem

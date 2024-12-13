@@ -32,7 +32,7 @@ Add the following configuration to your project file (`.csproj`):
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="TextLocalizer" Version="1.0.9" />
+        <PackageReference Include="TextLocalizer" Version="1.2.0" />
     </ItemGroup>
 
     <ItemGroup>
@@ -75,7 +75,8 @@ public enum SupportedLanguage
     CurrentProviderAccessor = nameof(Provider),
     DefaultProviderAccessor = nameof(DefaultProvider),
     TableName = "R", // Defaults to "Table"
-    GenerateDocs = true // Adds XML docs with translations for each key (enabled by default).
+    GenerateDocs = true, // Adds XML docs with translations for each key (enabled by default)
+    IdClassName = "R" // Set valid identifier to generate class with ids
 )]
 public partial class Localization
 {
@@ -84,6 +85,14 @@ public partial class Localization
     
     public static SupportedLanguage DefaultLanguage { get; set; } = SupportedLanguage.English;
     public SupportedLanguage Language { get; set; } = DefaultLanguage;
+    
+    // Using the generated id class
+    public string StringResource(StringResourceId id) => R[id];
+
+    public string StringResource(StringResourceId id, object? arg0)
+    {
+        return string.Format(R[id], arg0);
+    }
     
     private ILocalizedTextProvider Provider => GetLanguageProvider(Language);
     private ILocalizedTextProvider DefaultProvider => GetLanguageProvider(DefaultLanguage);
@@ -116,6 +125,14 @@ public partial class Localization
 
 ```csharp
 var localization = new Localization();
+
+// Accessing id of specific keys
+var farewellId = R.farewell;
+Console.WriteLine(localization.R[farewellId]);
+
+// Using the helper method to format translations
+var message = localization.StringResource(R.templated, true);
+Console.WriteLine(message);
 
 Console.WriteLine(localization.R.greetings);
 

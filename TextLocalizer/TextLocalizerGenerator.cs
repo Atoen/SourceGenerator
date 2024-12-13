@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
 namespace TextLocalizer;
@@ -61,11 +62,11 @@ internal class TextLocalizerGenerator : IIncrementalGenerator
 
         context.RegisterSourceOutput(
             combinedData,
-            static (productionContext, combined) => GenerateTranslationClass(combined, productionContext)
+            static (productionContext, combined) => GenerateClasses(combined, productionContext)
         );
     }
 
-    private static void GenerateTranslationClass(ImmutableArray<TranslationsProviderData> providerData, SourceProductionContext context)
+    private static void GenerateClasses(ImmutableArray<TranslationsProviderData> providerData, SourceProductionContext context)
     {
         Dictionary<string, IndexedLocalizedText>? defaultDictionary = null;
         TranslationsProviderData? defaultProvider = null;
@@ -73,9 +74,11 @@ internal class TextLocalizerGenerator : IIncrementalGenerator
         var translationsAggregatedByFilename = new Dictionary<string, Dictionary<string, string>>();
         var nonDefaultTranslations = new Dictionary<TranslationsProviderData, Dictionary<string, LocalizedText>>();
 
+        var builder = new StringBuilder();
+
         foreach (var data in providerData)
         {
-            var parsed = ParseFile(data.File);
+            var parsed = FileParser.Parse(data.File);
 
             // Aggregating translations for generating xml docs
             foreach (var pair in parsed)
@@ -101,20 +104,7 @@ internal class TextLocalizerGenerator : IIncrementalGenerator
             }
         }
 
-        // Generate default provider and table with xml docs
-        if (defaultDictionary is { } dictionary && defaultProvider is { } provider)
-        {
-            var providerClass = provider.ProviderAttributeData;
-            var result = SourceGenerationHelper.GenerateProvider(providerClass, defaultDictionary);
-            context.AddSource($"{providerClass.ClassName}.g.cs", result);
-
-            if (provider.Table is { } tableData)
-            {
-                var generatedTable = SourceGenerationHelper.GenerateLocalizationTable(tableData, dictionary, translationsAggregatedByFilename);
-                context.AddSource($"{tableData.ClassName}.g.cs", generatedTable);
-            }
-        }
-        else
+        if (defaultDictionary is null)
         {
             return;
         }
@@ -124,8 +114,27 @@ internal class TextLocalizerGenerator : IIncrementalGenerator
             var (data, translation) = (pair.Key, pair.Value);
 
             var indexedTranslations = IndexTranslationKeys(defaultDictionary, translation, data, context);
-            var result = SourceGenerationHelper.GenerateProvider(data.ProviderAttributeData, indexedTranslations);
+            var result = SourceGenerationHelper.GenerateProvider(builder, data.ProviderAttributeData, indexedTranslations);
             context.AddSource($"{data.ProviderAttributeData.ClassName}.g.cs", result);
+        }
+
+        if (defaultProvider is not { Table: { } tableData } provider)
+        {
+            return;
+        }
+
+        // Generate default provider and table with xml docs
+        var providerClass = provider.ProviderAttributeData;
+        var generatedDefaultProvider = SourceGenerationHelper.GenerateProvider(builder, providerClass, defaultDictionary);
+        context.AddSource($"{providerClass.ClassName}.g.cs", generatedDefaultProvider);
+
+        var generatedTable = SourceGenerationHelper.GenerateLocalizationTable(builder, tableData, defaultDictionary, translationsAggregatedByFilename);
+        context.AddSource($"{tableData.ClassName}.g.cs", generatedTable);
+
+        if (SyntaxFacts.IsValidIdentifier(tableData.IdClassName))
+        {
+            var generatedIdClass = SourceGenerationHelper.GenerateIdClass(builder, tableData, defaultDictionary, translationsAggregatedByFilename);
+            context.AddSource($"{tableData.IdClassName.Value}.g.cs", generatedIdClass);
         }
     }
 
@@ -216,84 +225,6 @@ internal class TextLocalizerGenerator : IIncrementalGenerator
         return semanticModel.GetDeclaredSymbol(classDeclarationSyntax) is INamedTypeSymbol classSymbol
             ? SourceGenerationHelper.CreateLocalizationTableData(classSymbol)
             : null;
-    }
-
-    private static Dictionary<string, LocalizedText> ParseFile(TranslationsFileData fileData)
-    {
-        var dictionary = new Dictionary<string, LocalizedText>();
-        var untranslatableSpan = "untranslatable".AsSpan();
-
-        for (var i = 0; i < fileData.SourceText.Lines.Count; i++)
-        {
-            var line = fileData.SourceText.Lines[i];
-            var spanLine = line.ToString().AsSpan().Trim();
-
-            if (spanLine.IsEmpty || spanLine[0] == '#')
-            {
-                continue;
-            }
-
-            var colonIndex = FindKeyValueDelimiterIndex(spanLine);
-            if (colonIndex == -1)
-            {
-                continue;
-            }
-
-            ReadOnlySpan<char> keyValuePart;
-            var commentPart = ReadOnlySpan<char>.Empty;
-            var commentIndex = spanLine.IndexOf('#');
-
-            if (commentIndex != -1)
-            {
-                keyValuePart = spanLine.Slice(0, commentIndex).Trim();
-                commentPart = spanLine.Slice(commentIndex + 1).Trim();
-            }
-            else
-            {
-                keyValuePart = spanLine;
-            }
-
-            var key = keyValuePart.Slice(0, colonIndex).TrimEnd();
-            var value = keyValuePart.Slice(colonIndex + 1).TrimStart();
-
-            if (value.Length > 1 &&
-                (value[0] == '\'' && value[value.Length - 1] == '\'' ||
-                 value[0] == '"' && value[value.Length - 1] == '"'))
-            {
-                value = value.Slice(1, value.Length - 2);
-            }
-
-            var untranslatable = commentPart.Equals(untranslatableSpan, StringComparison.OrdinalIgnoreCase);
-
-            dictionary[key.ToString()] = new LocalizedText(value.ToString(), i, untranslatable);
-        }
-
-        return dictionary;
-    }
-
-    private static int FindKeyValueDelimiterIndex(ReadOnlySpan<char> line)
-    {
-        var insideSingleQuotes = false;
-        var insideDoubleQuotes = false;
-
-        for (var i = 0; i < line.Length; i++)
-        {
-            var current = line[i];
-
-            switch (current)
-            {
-                case '\'' when !insideDoubleQuotes:
-                    insideSingleQuotes = !insideSingleQuotes;
-                    break;
-                case '"' when !insideSingleQuotes:
-                    insideDoubleQuotes = !insideDoubleQuotes;
-                    break;
-                case ':' when !insideSingleQuotes && !insideDoubleQuotes:
-                    return i;
-            }
-        }
-
-        return -1;
     }
 
     private static void AddTypes(IncrementalGeneratorPostInitializationContext context)

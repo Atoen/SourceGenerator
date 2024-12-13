@@ -5,7 +5,7 @@
         <id>TextLocalizer</id>
 
         <!-- Package version number that is used when resolving dependencies -->
-        <version>1.0.9</version>
+        <version>1.2.0</version>
 
         <!-- Authors contain text that appears directly on the gallery -->
         <authors>Atoen</authors>
@@ -25,9 +25,14 @@
         <!-- Tags appear in the gallery and can be used for tag searches -->
         <tags>SourceGenerated;Translation;Localization</tags>
 
+        <!-- Target framework compatibility -->
+        <frameworkAssemblies>
+            <frameworkAssembly assemblyName="netstandard2.0"/>
+        </frameworkAssemblies>
+
         <!-- Dependencies are automatically installed when the package is installed -->
         <dependencies>
-            <dependency id="TextLocalizer.Types" version="1.0.2" />
+            <dependency id="TextLocalizer.Types" version="1.0.3" />
         </dependencies>
     </metadata>
 </package>

@@ -2,6 +2,12 @@
 
 var localization = new Localization();
 
+var farewellId = R.farewell;
+Console.WriteLine(localization.R[farewellId]);
+
+var message = localization.StringResource(R.templated, true);
+Console.WriteLine(message);
+
 Console.WriteLine(localization.R.greetings);
 
 localization.SetLanguage(SupportedLanguage.Polish);
