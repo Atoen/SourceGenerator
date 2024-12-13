@@ -1,20 +1,17 @@
 using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 
 namespace TextLocalizer;
 
 using AllTranslationsData = Dictionary<string, Dictionary<string, string>>;
 
-public static class SourceGenerationHelper
+internal static class SourceGenerationHelper
 {
     private const string TranslationProviderAttributeName = "TranslationProviderAttribute";
     private const string LocalizationTableAttributeName = "LocalizationTableAttribute";
 
     public const string ProviderAttribute =
         """
-        #nullable enable
-
         namespace TextLocalizer
         {
             [System.AttributeUsage(System.AttributeTargets.Class)]
@@ -23,16 +20,14 @@ public static class SourceGenerationHelper
                 public required string Filename { get; set; }
                 
                 public bool IsDefault { get; set; }
-                
-                public string? Directory { get; set; }
             }
         }
-
-        #nullable restore
         """;
 
     public const string LocalizationTableAttribute =
         """
+        #nullable enable
+        
         namespace TextLocalizer
         {
             [System.AttributeUsage(System.AttributeTargets.Class)]
@@ -45,15 +40,13 @@ public static class SourceGenerationHelper
                 public string TableName { get; set; } = "Table";
                 
                 public bool GenerateDocs { get; set; } = true;
+                
+                public string? IdClassName { get; set; }
             }
         }
+        
+        #nullable restore
         """;
-
-
-    public static bool IsValidNameIdentifier(string identifier)
-    {
-        return SyntaxFacts.IsValidIdentifier(identifier);
-    }
 
     public static Dictionary<string, IndexedLocalizedText> CreateIndexedLocalizedTextDictionary(Dictionary<string, LocalizedText> parsedLocalizedTexts)
     {
@@ -76,14 +69,22 @@ public static class SourceGenerationHelper
         return indexedDictionary;
     }
 
-    public static string GenerateProvider(TranslationProviderClassData classData, Dictionary<string, IndexedLocalizedText> dictionary)
+    public static string GenerateProvider(
+        StringBuilder builder,
+        TextProviderAttributeData textProvider,
+        Dictionary<string,
+        IndexedLocalizedText> dictionary)
     {
-        var builder = new StringBuilder()
-            .Append("#nullable enable\n\n")
+        if (!textProvider.IsDefault)
+        {
+            builder.Append("#nullable enable\n\n");
+        }
+
+        builder
             .Append("using TextLocalizer.Types;\n\n")
-            .Append("namespace ").Append(classData.Namespace).Append('\n')
+            .Append("namespace ").Append(textProvider.Namespace).Append('\n')
             .Append("{\n")
-            .Append("    public partial class ").Append(classData.ClassName).Append(" : ILocalizedTextProvider\n")
+            .Append("    public partial class ").Append(textProvider.ClassName).Append(" : ILocalizedTextProvider\n")
             .Append("    {\n")
             .Append("        private readonly Dictionary<int, string> _dictionary = new()\n")
             .Append("        {\n");
@@ -96,7 +97,7 @@ public static class SourceGenerationHelper
 
         builder.Append("        };\n\n");
 
-        var accessor = classData.IsDefault
+        var accessor = textProvider.IsDefault
             ? "public string this[int key] => _dictionary[key];\n"
             : "public string? this[int key] => _dictionary.GetValueOrDefault(key);\n";
 
@@ -104,64 +105,79 @@ public static class SourceGenerationHelper
 
         builder
             .Append("    }\n")
-            .Append("}\n\n")
-            .Append("#nullable restore");
+            .Append("}\n");
 
-        return builder.ToString();
+        if (!textProvider.IsDefault)
+        {
+           builder.Append("\n#nullable restore");
+        }
+
+        var result = builder.ToString();
+        builder.Clear();
+
+        return result;
     }
 
     public static string GenerateLocalizationTable(
-        LocalizationTableData localizationTableData,
+        StringBuilder builder,
+        TranslationTableAttributeData translationTable,
         Dictionary<string, IndexedLocalizedText> defaultDictionary,
         AllTranslationsData allTranslations)
     {
-        var builder = new StringBuilder()
+        builder
             .Append("#nullable enable\n\n")
             .Append("using TextLocalizer.Types;\n\n")
-            .Append("namespace ").Append(localizationTableData.Namespace).Append('\n')
+            .Append("namespace ").Append(translationTable.Namespace).Append('\n')
             .Append("{\n")
-            .Append("    public partial class ").Append(localizationTableData.ClassName).Append('\n')
+            .Append("    public partial class ").Append(translationTable.ClassName).Append('\n')
             .Append("    {\n")
             .Append("        private TextTable? _table;\n")
-            .Append("        public TextTable ").Append(localizationTableData.TableName).Append(" => _table ??= new TextTable(this);\n\n")
-            .Append("        public class TextTable(").Append(localizationTableData.ClassName).Append(" outer)\n")
-            .Append("        {\n");
+            .Append("        public TextTable ").Append(translationTable.TableName).Append(" => _table ??= new TextTable(this);\n\n")
+            .Append("        public class TextTable(").Append(translationTable.ClassName).Append(" outer)\n")
+            .Append("        {");
+
+        if (!translationTable.GenerateDocs)
+        {
+            builder.Append('\n');
+        }
 
         foreach (var pair in defaultDictionary)
         {
             var (key, localizedText) = (pair.Key, pair.Value);
-            AppendTextTableProperty(builder, key, localizedText, localizationTableData, allTranslations);
+            AppendTextProp(builder, key, localizedText, translationTable, allTranslations);
         }
 
-        builder.Append("        }\n")
+        builder
+            .Append("\n            public string this[StringResourceId id]")
+            .Append(" => outer.").Append(translationTable.CurrentProviderAccessor)
+            .Append("[id] ?? outer.")
+            .Append(translationTable.DefaultProviderAccessor).Append("[id]!;\n");
+
+        builder.Append("        }\n");
+
+        builder
             .Append("    }\n")
             .Append("}\n\n")
             .Append("#nullable restore");
 
-        return builder.ToString();
+        var result = builder.ToString();
+        builder.Clear();
+
+        return result;
     }
 
-    /// <summary>
-    /// <i>untranstatable key</i> <br/>
-    /// oro
-    /// </summary>
-    /// <param name="builder"></param>
-    /// <param name="key"></param>
-    /// <param name="localizedText"></param>
-    /// <param name="data"></param>
-    /// <param name="allTranslations"></param>
-    private static void AppendTextTableProperty(
+    private static void AppendTextProp(
         StringBuilder builder,
         string key,
         IndexedLocalizedText localizedText,
-        LocalizationTableData data,
+        TranslationTableAttributeData translationTable,
         AllTranslationsData allTranslations)
     {
-
         if (localizedText.IsUntranslatable)
         {
-            if (data.GenerateDocs)
+            if (translationTable.GenerateDocs)
             {
+                builder.Append('\n');
                 builder.Append("            /// <summary>\n");
                 builder.Append("            /// <i>Marked as untranslatable</i><br/>\n");
                 builder.Append("            /// ").Append(localizedText.Text).Append('\n');
@@ -170,13 +186,14 @@ public static class SourceGenerationHelper
 
             builder
                 .Append("            public string ").Append(key)
-                .Append(" => outer.").Append(data.DefaultProviderAccessor)
+                .Append(" => outer.").Append(translationTable.DefaultProviderAccessor)
                 .Append("[").Append(localizedText.Index).Append("]!;\n");
         }
         else
         {
-            if (data.GenerateDocs && allTranslations.TryGetValue(key, out var fileTranslations))
+            if (translationTable.GenerateDocs && allTranslations.TryGetValue(key, out var fileTranslations))
             {
+                builder.Append('\n');
                 builder.Append("            /// <summary>\n");
                 builder.Append("            ///  <list type=\"table\">\n");
                 builder.Append("            ///   <listheader>\n");
@@ -189,8 +206,8 @@ public static class SourceGenerationHelper
                     var (filename, translation) = (pair.Key, pair.Value);
 
                     builder.Append("            ///   <item>\n");
-                    builder.Append($"            ///    <term>").Append(filename).Append("</term>\n");
-                    builder.Append($"            ///    <description>").Append(translation).Append("</description>\n");
+                    builder.Append("            ///    <term>").Append(filename).Append("</term>\n");
+                    builder.Append("            ///    <description>").Append(translation).Append("</description>\n");
                     builder.Append("            ///   </item>\n");
                 }
 
@@ -200,79 +217,116 @@ public static class SourceGenerationHelper
 
             builder
                 .Append("            public string ").Append(key)
-                .Append(" => outer.").Append(data.CurrentProviderAccessor)
+                .Append(" => outer.").Append(translationTable.CurrentProviderAccessor)
                 .Append("[").Append(localizedText.Index).Append("] ?? outer.")
-                .Append(data.DefaultProviderAccessor).Append("[").Append(localizedText.Index).Append("]!;\n");
+                .Append(translationTable.DefaultProviderAccessor).Append("[").Append(localizedText.Index).Append("]!;\n");
         }
     }
 
-    public static TranslationProviderClassData? CreateTranslationProviderInfo(INamedTypeSymbol classSymbol)
+    public static string GenerateIdClass(
+        StringBuilder builder,
+        TranslationTableAttributeData translationTable,
+        Dictionary<string, IndexedLocalizedText> defaultDictionary,
+        AllTranslationsData allTranslations)
+    {
+
+        builder
+            .Append("#nullable enable\n\n")
+            .Append("using TextLocalizer.Types;\n\n")
+            .Append("namespace ").Append(translationTable.Namespace).Append("\n")
+            .Append("{\n")
+            .Append("    public class ").Append(translationTable.IdClassName).Append('\n')
+            .Append("    {");
+
+        if (!translationTable.GenerateDocs)
+        {
+            builder.Append('\n');
+        }
+
+        foreach (var pair in defaultDictionary)
+        {
+            var (key, localizedText) = (pair.Key, pair.Value);
+            AppendIdProp(builder, key, localizedText, translationTable, allTranslations);
+        }
+
+        builder
+            .Append("    }\n")
+            .Append("}\n\n")
+            .Append("#nullable restore");
+
+        var result = builder.ToString();
+        builder.Clear();
+
+        return result;
+    }
+
+    private static void AppendIdProp(
+        StringBuilder builder,
+        string key,
+        IndexedLocalizedText localizedText,
+        TranslationTableAttributeData translationTable,
+        AllTranslationsData allTranslations)
+    {
+        if (translationTable.GenerateDocs)
+        {
+            if (localizedText.IsUntranslatable)
+            {
+                builder.Append('\n');
+                builder.Append("        /// <summary>\n");
+                builder.Append("        /// <i>Marked as untranslatable</i><br/>\n");
+                builder.Append("        /// ").Append(localizedText.Text).Append('\n');
+                builder.Append("        /// </summary>\n");
+            }
+            else if (allTranslations.TryGetValue(key, out var fileTranslations))
+            {
+                builder.Append('\n');
+                builder.Append("        /// <summary>\n");
+                builder.Append("        ///  <list type=\"table\">\n");
+                builder.Append("        ///   <listheader>\n");
+                builder.Append("        ///    <term>File</term>\n");
+                builder.Append("        ///    <description>Translation</description>\n");
+                builder.Append("        ///   </listheader>\n");
+
+                foreach (var pair in fileTranslations)
+                {
+                    var (filename, translation) = (pair.Key, pair.Value);
+
+                    builder.Append("        ///   <item>\n");
+                    builder.Append("        ///    <term>").Append(filename).Append("</term>\n");
+                    builder.Append("        ///    <description>").Append(translation).Append("</description>\n");
+                    builder.Append("        ///   </item>\n");
+                }
+
+                builder.Append("        ///  </list>\n");
+                builder.Append("        /// </summary>\n");
+            }
+        }
+
+        builder.Append("        public static readonly StringResourceId ").Append(key).Append(" = new(").Append(localizedText.Index).Append(");\n");
+    }
+
+    public static TextProviderAttributeData? CreateTranslationProviderInfo(INamedTypeSymbol classSymbol)
     {
         var attributeData = GetAttributeData(classSymbol, TranslationProviderAttributeName);
         if (attributeData is null) return null;
 
         var @namespace = classSymbol.ContainingNamespace.ToString();
         var className = classSymbol.Name;
-        var filename = "";
-        var isDefault = false;
 
-        foreach (var namedArgument in attributeData.NamedArguments)
-        {
-            if (namedArgument is { Key: "Filename", Value.Value: string filenameValue })
-            {
-                filename = filenameValue;
-            }
-
-            if (namedArgument is { Key: "IsDefault", Value.Value: bool isDefaultValue })
-            {
-                isDefault = isDefaultValue;
-            }
-        }
-
-        return new TranslationProviderClassData(@namespace, className, filename, isDefault);
+        return new TextProviderAttributeData(@namespace, className, attributeData);
     }
 
-    public static LocalizationTableData? CreateLocalizationTableData(INamedTypeSymbol classSymbol)
+    public static TranslationTableAttributeData? CreateLocalizationTableData(INamedTypeSymbol classSymbol)
     {
         var attributeData = GetAttributeData(classSymbol, LocalizationTableAttributeName);
         if (attributeData is null) return null;
 
         var @namespace = classSymbol.ContainingNamespace.ToString();
         var className = classSymbol.Name;
-        var currentProviderAccessor = "";
-        var defaultProviderAccessor = "";
-        var tableName = "Table";
-        var generateDocs = true;
 
-        foreach (var namedArgument in attributeData.NamedArguments)
-        {
-            if (namedArgument is { Key: "CurrentProviderAccessor", Value.Value: string currentProviderAccessorValue })
-            {
-                currentProviderAccessor = currentProviderAccessorValue;
-            }
-            
-            if (namedArgument is { Key: "DefaultProviderAccessor", Value.Value: string defaultProviderAccessorValue })
-            {
-                defaultProviderAccessor = defaultProviderAccessorValue;
-            }
+        var data = new TranslationTableAttributeData(@namespace, className, attributeData);
 
-            if (namedArgument is { Key: "TableName", Value.Value: string tableNameValue })
-            {
-                tableName = tableNameValue;
-            }
-
-            if (namedArgument is { Key: "GenerateDocs", Value.Value: bool generateDocsValue })
-            {
-                generateDocs = generateDocsValue;
-            }
-        }
-
-        if (!IsValidNameIdentifier(currentProviderAccessor) || !IsValidNameIdentifier(defaultProviderAccessor) || !IsValidNameIdentifier(tableName))
-        {
-            return null;
-        }
-
-        return new LocalizationTableData(@namespace, className, currentProviderAccessor, defaultProviderAccessor, tableName, generateDocs);
+        return data.IsValid() ? data : null;
     }
 
     private static AttributeData? GetAttributeData(INamedTypeSymbol classSymbol, string attributeName)

@@ -9,7 +9,7 @@
 
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageId>TextLocalizer.Types</PackageId>
-        <Version>1.0.2</Version>
+        <Version>1.0.3</Version>
         <Authors>Atoen</Authors>
         <Title>TextLocalizer.Types</Title>
         <Description>Types used by the source generator</Description>

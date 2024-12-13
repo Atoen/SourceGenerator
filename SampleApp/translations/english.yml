@@ -7,3 +7,4 @@ evening: Good evening
 missing_key: Shouldn't appear in localized
 untranslated_key: Untranslated in localized #untranslatable
 shuffled: Original order matters
+templated: Message with a {0} template

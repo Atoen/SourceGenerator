@@ -8,7 +8,8 @@ namespace SampleApp;
     CurrentProviderAccessor = nameof(Provider),
     DefaultProviderAccessor = nameof(DefaultProvider),
     TableName = "R",
-    GenerateDocs = true
+    GenerateDocs = true,
+    IdClassName = "R"
 )]
 public partial class Localization
 {
@@ -29,6 +30,28 @@ public partial class Localization
     {
         Language = language;
         CultureInfo = CultureInfo.GetCultureInfoByIetfLanguageTag(language.Tag);
+    }
+
+    public string StringResource(StringResourceId id) => R[id];
+
+    public string StringResource(StringResourceId id, object? arg0)
+    {
+        return string.Format(R[id], arg0);
+    }
+
+    public string StringResource(StringResourceId id, object? arg0, object? arg1)
+    {
+        return string.Format(R[id], arg0, arg1);
+    }
+
+    public string StringResource(StringResourceId id, object? arg0, object? arg1, object? arg2)
+    {
+        return string.Format(R[id], arg0, arg1, arg2);
+    }
+
+    public string StringResource(StringResourceId id, params ReadOnlySpan<object?> args)
+    {
+        return string.Format(R[id], args);
     }
 
     private static ILocalizedTextProvider CreateProvider(SupportedLanguage language) => language.Tag switch
